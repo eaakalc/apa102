@@ -153,6 +153,12 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="LEDStrip.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="LEDStrip.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="main.cpp">
       <SubType>compile</SubType>
     </Compile>
