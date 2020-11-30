@@ -5,12 +5,20 @@
 * Author: Kaare
 */
 #include "LEDStrip.h"
+
+#ifndef F_CPU
 #define F_CPU 16000000UL
+#endif
+
+#ifndef LEDSIZE
+#define LEDSIZE 1024
+#endif
 
 int size = 0;
-LED *leds;
 uint8_t useSPI = 0;
 uint8_t brightness;
+uint8_t leds[LEDSIZE];
+uint8_t maxpos;
 
 LEDStrip::LEDStrip(uint8_t rows, uint8_t columns, uint8_t br, uint8_t comms)
 {
@@ -18,6 +26,8 @@ LEDStrip::LEDStrip(uint8_t rows, uint8_t columns, uint8_t br, uint8_t comms)
 		brightness = br;
 	else
 		brightness = 31;
+	
+	maxpos = rows * columns;
 	
 	if(comms)
 	{
@@ -33,8 +43,6 @@ LEDStrip::LEDStrip(uint8_t rows, uint8_t columns, uint8_t br, uint8_t comms)
 		DDRB |= (1 << 3) | (1 << 5);
 	}
 	
-	leds = new LED[rows * columns];
-	
 	for (int i = 0; i < rows * columns; i++)
 	{
 		setLED(i, 0, 0, 0);
@@ -43,24 +51,36 @@ LEDStrip::LEDStrip(uint8_t rows, uint8_t columns, uint8_t br, uint8_t comms)
 
 LEDStrip::~LEDStrip()
 {
-	delete[] leds;
+
 }
 
-void setLED(uint8_t pos, uint8_t r, uint8_t g, uint8_t b)
+void LEDStrip::setLED(uint8_t pos, uint8_t r, uint8_t g, uint8_t b)
 {
-	leds[pos]._r = r;
-	leds[pos]._g = g;
-	leds[pos]._b = b;
+	uint8_t position = pos + ((pos - 1) * 2);
+	
+	leds[position] = r;
+	leds[position + 1] = g;
+	leds[position + 2] = b;
 }
 
-void clearLED(uint8_t pos)
+void LEDStrip::clearLED(uint8_t pos)
 {
-	leds[pos]._r = 0;
-	leds[pos]._g = 0;
-	leds[pos]._b = 0;
+	uint8_t position = pos + ((pos - 1) * 2);
+	
+	leds[position] = 0;
+	leds[position + 1] = 0;
+	leds[position + 2] = 0;
 }
 
-void sendByte(uint8_t byte)
+void LEDStrip::setBrightness(uint8_t br)
+ {
+	 if(br < 32)
+	 	brightness = br;
+	 else
+	 	brightness = 31;
+ }
+
+void LEDStrip::sendByte(uint8_t byte)
 {
 	uint8_t data = byte;
 	
@@ -72,30 +92,40 @@ void sendByte(uint8_t byte)
 	}
 	else
 	{
-		if(data & 128)
-			PORTB |= (1 << 3);
-		else
-			PORTB &= ~(1 << 3);
+		//For each bit in a byte
+		for (int i = 0; i < 8; i++)
+		{
+			if(data & 128)
+				PORTB |= (1 << 3);
+			else
+				PORTB &= ~(1 << 3);
 			
-		data <<= 1;
+			data <<= 1;
 		
-		PORTB |= (1 << 5);
-		_delay_ms(1);
-		PORTB &= ~(1 << 5);
+			PORTB |= (1 << 5);
+			_delay_ms(1);
+			PORTB &= ~(1 << 5);
+		}
 	}
 }
 
-void sendFrames()
+void LEDStrip::Update()
 {
 	sendByte(0);
+	sendByte(0);
+	sendByte(0);
+	sendByte(0);
 	
-	for (uint8_t i = 0; i < (sizeof(leds) / sizeof(LED)); i++)
+	for (uint8_t i = 0; i <= maxpos * 3; i += 3)
 	{
 		sendByte(224 + brightness);
-		sendByte(leds[i]._b);
-		sendByte(leds[i]._g);
-		sendByte(leds[i]._r);
+		sendByte(leds[i + 1]);
+		sendByte(leds[i + 2]);
+		sendByte(leds[i + 3]);
 	}
 	
+	sendByte(255);
+	sendByte(255);
+	sendByte(255);
 	sendByte(255);
 }

@@ -14,11 +14,6 @@
 #include "avr/io.h"
 #include <util/delay.h>
 
-typedef struct
-{
-	uint8_t _r, _g, _b;
-} LED;
-
 class LEDStrip
 {
 //variables
@@ -32,13 +27,13 @@ public:
 	~LEDStrip();
 	void setLED(uint8_t pos, uint8_t r, uint8_t g, uint8_t b);
 	void clearLED(uint8_t pos);
-	void sendFrames();
+	void setBrightness(uint8_t br);
+	void Update();
 protected:
 private:
 	LEDStrip( const LEDStrip &c );
 	LEDStrip& operator=( const LEDStrip &c );
 	void sendByte(uint8_t byte);
-	void createFrame(uint8_t pos);
 }; //LEDStrip
 
 #endif //__LEDSTRIP_H__
